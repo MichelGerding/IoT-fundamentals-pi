@@ -13,10 +13,10 @@ from paho.mqtt.client import Client as MqttClient
 
 load_dotenv()
 
-
 from azure.iot.device import IoTHubDeviceClient
 from enum import Enum
 from json import dumps
+
 
 # device client errors enum
 class DeviceClientErrors(Enum):
@@ -24,30 +24,32 @@ class DeviceClientErrors(Enum):
     FAILED_TO_SEND_TELEMETRY = 2
     FAILED_TO_PATCH_TWIN = 3
 
-class DeviceClient: 
+
+class DeviceClient:
     device_client: IoTHubDeviceClient
 
     def __init__(self, connection_str: str, property_patched) -> None:
         if self.connect(connection_str):
             return
+        print('hi')
 
-        self.device_client.receive_twin_desired_properties_patch = property_patched
+        self.device_client.on_twin_desired_properties_patch_received = property_patched
 
     def send_telemetry(self, telemetry: dict) -> None:
         json = dumps(telemetry)
-        try: 
+        try:
             self.device_client.send_message(json)
         except:
             return DeviceClientErrors.FAILED_TO_SEND_TELEMETRY
 
     def patch_twin(self, update: dict) -> None:
-        try: 
-            self.device_client.patch_twin(update)
+        try:
+            self.device_client.patch_twin_reported_properties(update)
         except:
             return DeviceClientErrors.FAILED_TO_PATCH_TWIN
 
     def connect(self, connection_str: str) -> None | DeviceClientErrors:
-        try: 
+        try:
             self.device_client = IoTHubDeviceClient.create_from_connection_string(connection_str)
         except Exception as e:
             print(e)
@@ -60,9 +62,14 @@ cursor: MySQLCursor
 device_client: DeviceClient
 mqtt_client: MqttClient
 
+connected = False
+
 
 def on_connect(client, userdate, flags, rc):
+    global connected
+
     print("Connected with result code " + str(rc))
+    connected = True
     client.subscribe(os.getenv("MQTT_TOPIC") + '#')
 
 
@@ -113,7 +120,7 @@ def upload_old_data():
                         rows[-1][1]: rows[-1][2],
                         'timestamp': rows[-1][3].strftime('%Y-%m-%d %H:%M:%S')
                     })
-                uploaded_ids.append((rows[-1][0], ))
+                uploaded_ids.append((rows[-1][0],))
 
         except:
             print('something went wrong')
@@ -161,6 +168,8 @@ def property_patched(update: dict):
 
         if key == 'delay':
             delayTopic = os.getenv('MQTT_TOPIC') + 'delay'
+            while not connected:
+                pass
             mqtt_client.publish(delayTopic, value)
 
 
@@ -184,7 +193,7 @@ def main():
 
     # setup mqtt connection
     mqtt_client = mqtt.Client()
-    
+
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
 
