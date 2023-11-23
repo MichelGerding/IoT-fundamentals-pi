@@ -1,22 +1,23 @@
-import datetime
-import os
-import threading
-
-from dotenv import load_dotenv
-
+# mysql packages
 import mysql.connector
 from mysql.connector.pooling import PooledMySQLConnection
 from mysql.connector.cursor import MySQLCursor
 
+# mqtt packages
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import Client as MqttClient
 
-load_dotenv()
-
+# azure packages
 from azure.iot.device import IoTHubDeviceClient
+
+# other packages
+import os
+import threading
 from enum import Enum
 from json import dumps
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # device client errors enum
 class DeviceClientErrors(Enum):
@@ -28,31 +29,29 @@ class DeviceClientErrors(Enum):
 class DeviceClient:
     device_client: IoTHubDeviceClient
 
-    def __init__(self, connection_str: str, property_patched) -> None:
+    def __init__(self, connection_str: str, property_patched_callback) -> None:
         if self.connect(connection_str):
             return
-        print('hi')
 
-        self.device_client.on_twin_desired_properties_patch_received = property_patched
+        self.device_client.on_twin_desired_properties_patch_received = property_patched_callback
 
-    def send_telemetry(self, telemetry: dict) -> None:
+    def send_telemetry(self, telemetry: dict) -> DeviceClientErrors | None:
         json = dumps(telemetry)
         try:
             self.device_client.send_message(json)
         except:
             return DeviceClientErrors.FAILED_TO_SEND_TELEMETRY
 
-    def patch_twin(self, update: dict) -> None:
+    def patch_twin(self, update: dict) -> DeviceClientErrors | None:
         try:
             self.device_client.patch_twin_reported_properties(update)
         except:
             return DeviceClientErrors.FAILED_TO_PATCH_TWIN
 
-    def connect(self, connection_str: str) -> None | DeviceClientErrors:
+    def connect(self, connection_str: str) -> DeviceClientErrors | None:
         try:
             self.device_client = IoTHubDeviceClient.create_from_connection_string(connection_str)
         except Exception as e:
-            print(e)
             return DeviceClientErrors.FAILED_TO_CONNECT
 
 
@@ -147,7 +146,7 @@ def on_message(client, userdata, msg):
         send = 1 if device_client.patch_twin({
             topic: value,
             "updated": topic
-        }) == None else 0
+        }) is None else 0
 
         # check if we want to store this topic
         if topic in ['temperature', 'pressure', 'humidity']:
@@ -158,6 +157,15 @@ def on_message(client, userdata, msg):
             })
 
             stored = 1
+
+        # if a device connects to mqtt it will send its delay over mqtt. we will check this if it is equal to the
+        # desired delay. if not we will ask the device to update
+        elif topic == 'delay':
+            delayTopic = os.getenv('MQTT_TOPIC') + 'delay'
+            desired_delay = device_client.device_client.get_twin()['desired']['delay']
+            print(desired_delay, value, int(desired_delay) == value)
+            if int(desired_delay) != int(value):
+                mqtt_client.publish(delayTopic, desired_delay)
 
     print(f"Received message: {{\"{topic}\": \"{value}\"}}. Send to azure: {send}, stored in db: {stored}")
 
