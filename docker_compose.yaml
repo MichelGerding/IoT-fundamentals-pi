@@ -1,0 +1,96 @@
+version: '3.1'
+
+services:
+
+  db: # database. used to store the recieved data and store user accounts of mqtt server
+    image: mysql
+    restart: always
+    command: [ "--max_connections=1000" ]
+
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    
+    ports: 
+      - 3306:3306
+
+    volumes: 
+      - ./db/data:/var/lib/mysql
+      - ./db/scripts:/docker-entrypoint-initdb.d
+
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  mqtt: 
+    image: emqx/emqx:5.3.0
+    container_name: mqtt-broker-1
+    
+    healthcheck:
+      test: ["CMD", "/opt/emqx/bin/emqx_ctl", "status"]
+      interval: 5s
+      timeout: 25s
+      retries: 5
+    
+    depends_on:
+      db:
+        condition: service_healthy
+
+    volumes: 
+      - ./mqtt/config/data:/opt/emqx/data
+      - ./mqtt/config/etc:/opt/emqx/etc
+      - ./mqtt/config/log:/opt/emqx/log
+
+    ports: 
+      - 1883:1883 # mqtt port 
+      - 8883:8883 
+      - 8083:8083 # websocket port
+      - 18083:18083 # web interface
+
+    links: 
+      - "db:database"
+
+
+  data_gateway: # collect the data and store it in db/ send to azure    
+    build: ./services/data_gateway
+    
+    links:
+      - 'mqtt:mqtt'
+      - 'db:database'
+
+    environment:
+      AZURE_CONNECTION_STRING: "" # fill in this connection string
+
+      MQTT_USER: "user1"
+      MQTT_PASSWORD: "password"
+      MQTT_TOPIC: "esp/bme280/"
+      MQTT_HOST: "mqtt"
+
+      MYSQL_PASS: "password"
+
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
+      
+
+  website:
+    build:
+      context: ./services/website
+      target: final
+    ports:
+      - 8080:8080
+
+    links: 
+      - "db:database"
+
+    environment:
+      DATABASE_URL: "mysql://root:password@database:3306/data"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+
+

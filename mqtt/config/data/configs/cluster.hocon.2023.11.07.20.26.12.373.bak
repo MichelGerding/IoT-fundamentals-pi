@@ -1,0 +1,55 @@
+authentication = [
+  {
+    backend = mysql
+    database = mqtt_data
+    enable = true
+    mechanism = password_based
+    password = password
+    password_hash_algorithm {name = sha256, salt_position = disable}
+    pool_size = 8
+    query = "SELECT password FROM users where username = ${username} LIMIT 1"
+    query_timeout = 5s
+    server = "database:3306"
+    ssl {
+      ciphers = []
+      depth = 10
+      enable = false
+      hibernate_after = 5s
+      log_level = notice
+      reuse_sessions = true
+      secure_renegotiate = true
+      verify = verify_peer
+      versions = [tlsv1.3, tlsv1.2]
+    }
+    username = root
+  }
+]
+authorization {
+  cache {
+    enable = true
+    max_size = 32
+    ttl = 1m
+  }
+  deny_action = ignore
+  no_match = allow
+  sources = [
+    {
+      database = mqtt_data
+      password = password
+      pool_size = 8
+      query = "SELECT action, permission, topic FROM mqtt_acl where username = ${username}"
+      server = "database:3306"
+      ssl {enable = false, verify = verify_peer}
+      type = mysql
+      username = root
+    },
+    {
+      enable = true
+      path = "${EMQX_ETC_DIR}/acl.conf"
+      type = file
+    }
+  ]
+}
+auto_subscribe {
+  topics = []
+}

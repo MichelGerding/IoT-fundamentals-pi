@@ -1,0 +1,164 @@
+body { padding: 0; margin: 0;}
+
+main {
+    padding-top: 100px;
+    display: flex;
+    flex-direction: column;
+
+
+    align-items: center;
+    justify-content: center;
+    gap: 100px;
+
+    font-family: 'Lexend Giga', sans-serif;
+}
+
+main >  * {
+    text-align: center;
+}
+
+
+.header {
+    font-size: 22px;
+}
+.header > h1 {
+    font-size: 1em;
+}
+
+.header > p {
+    font-size: 1.5em;
+}
+
+.header > * {
+    margin: 0;
+    padding: 0;
+
+    font-weight: bold;
+}
+
+.report {
+    max-width: 900px;
+    display: flex;
+    margin: 40px;
+    margin-left: 20px;
+    align-items: center;
+    gap: 50px;
+}
+
+.report > img { 
+    height: clamp(250px, 35vw, 500px);
+    aspect-ratio: 1/1;
+    margin-rigth: 5%
+}
+
+.temp {
+    font-size: clamp(100px, calc(50vw / 4), 200px);
+}
+
+
+
+.measurement {
+
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    align-items: start;
+    text-align: start;
+
+    font-size: 20px;
+}
+.measurement p {
+    margin: 0px;
+    font-weight: bold;
+}
+
+
+.measurement .value, .blue {
+    color: #086FCF;
+    font-weight: normal;
+}
+
+
+a {
+    color: black;
+    text-decoration: none;
+    font-size: 22px;
+
+    position: relative;
+
+    font-weight: bold;
+}
+
+/*a::before, a::after {*/
+/*    content: "";*/
+/*    display: block;*/
+/*    bottom: 0;*/
+/*    height: 1px;*/
+/*    width: 50%;*/
+
+/*    background-color: black;*/
+
+/*    position: absolute;*/
+
+/*    transition: 0.3s;*/
+/*}*/
+
+/*a::after {*/
+/*    right: 0;*/
+/*}*/
+
+/*a:hover::after, a:hover::before {*/
+/*    width: 0;*/
+/*}*/
+
+/*750px and smaller*/
+@media screen and (max-width: 750px) {
+
+    main {
+        padding-top: 70px;
+        padding-bottom: 50px;
+        height: 100%;
+    }
+
+    .header {
+        font-size: 18px;
+    }
+
+    .wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+    }
+
+    .report {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        padding: 20px;
+    }
+
+    .report > img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+
+        z-index: -1;
+        opacity: 0.52;
+    }
+
+    .measurement {
+        display: block;
+        width: 100%;
+        font-size: clamp(12px, 4vw, 20px);
+    }
+
+    .temp {
+        font-size: 5em;
+    }
+
+}

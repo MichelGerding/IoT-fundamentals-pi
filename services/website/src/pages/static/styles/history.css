@@ -1,0 +1,22 @@
+.back_button {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+
+    background: white;
+    padding: 20px;
+}
+
+.back_button:last-of-type {
+    top: auto;
+    bottom: 0px;
+}
+
+main {
+    padding-top: 70px;
+    overflow: hidden;
+}

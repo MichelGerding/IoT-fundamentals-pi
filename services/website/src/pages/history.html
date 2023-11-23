@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Giga:wght@100;400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/styles/index.css">
+    <link rel="stylesheet" href="/static/styles/history.css">
+    <script src="https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.umd.min.js"></script>
+    <title>Document</title>
+    <link rel="stylesheet" href="/static/uplot/style.css">
+
+</head>
+<body>
+
+<main>
+    <input id="datepicker" value="2023-11-01 - 2023-11-30"/>
+
+    <div class="header">
+        <h1> CLIMATEHUB </h1>
+        <p>HISTORICAL DATA</p>
+    </div>
+    
+    <graph-component type="temperature"></graph-component>
+    <graph-component type="humidity"></graph-component>
+    <graph-component type="pressure"></graph-component>
+
+
+    <a href="/" class="back_button"> <- LIVE DATA </a>
+</main>
+<style>
+    #datepicker {
+        border: none;
+        position: fixed;
+
+        font-family: 'Lexend Giga', sans-serif;
+        font-size: 20px;
+        font-weight: normal;
+
+        top: 20px;
+        left: 20px;
+    }
+</style>
+<script>
+    let initialRender = false
+
+    const input = document.getElementById('datepicker');
+    const { get, set } = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+    Object.defineProperty(input, 'value', {
+        get() {
+            return get.call(this);
+        },
+        set(newVal) {
+            // update all graphs
+            if (!initialRender) {
+                initialRender = true
+                return set.call(this, newVal);
+            }
+
+            // rerender graphs
+            const graphs = document.querySelectorAll('graph-component')
+            graphs.forEach(graph => {
+                graph.updateState({dateRange: newVal})
+            })
+
+            return set.call(this, newVal);
+        }
+    });
+
+
+    new easepick.create({
+        element: "#datepicker",
+        css: [
+            "https://cdn.jsdelivr.net/npm/@easepick/bundle@1.2.1/dist/index.css"
+        ],
+        zIndex: 10,
+        plugins: [
+            "RangePlugin"
+        ]
+    })
+</script>
+<script type="module" src="/static/js/graph.mjs"></script>
+
+</body>
+</html>
